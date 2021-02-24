@@ -24,7 +24,23 @@ void yyerror(struct ast *ret, const char *);
 %token <value>    VALUE       "value"
 %token <name>     NAME        "name"
 
+%token            KW_PRINT    "print"
 %token            KW_FORWARD  "forward"
+%token            KW_FW        "fw"
+%token            KW_BACKWARD "backward"
+%token            KW_BW       "bw"
+%token            KW_POSITION "position"
+%token            KW_POS      "pos"
+%token            KW_UP       "up" 
+%token            KW_DOWN     "down"
+%token            KW_RIGHT    "right"
+%token            KW_RT       "rt"
+%token            KW_LEFT     "left"
+%token            KW_LT       "lt"
+%token            KW_HEADING  "heading"
+%token            KW_HD       "hd"
+%token            KW_COLOR    "color"
+%token            KW_HOME     "home"
 /* TODO: add other tokens */
 
 %type <node> unit cmds cmd expr
