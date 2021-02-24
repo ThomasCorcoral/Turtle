@@ -41,7 +41,6 @@ void yyerror(struct ast *ret, const char *);
 %token            KW_HD       "hd"
 %token            KW_COLOR    "color"
 %token            KW_HOME     "home"
-/* TODO: add other tokens */
 
 %type <node> unit cmds cmd expr
 
@@ -57,7 +56,24 @@ cmds:
 ;
 
 cmd:
-    KW_FORWARD expr   {  $$ = make_cmd_forward($2); }
+    KW_FORWARD expr     {  $$ = make_cmd_forward($2); }
+  | KW_FW expr          {  $$ = make_cmd_forward($2); }
+  | KW_BACKWARD expr    {  $$ = make_cmd_backward($2); }
+  | KW_BW expr          {  $$ = make_cmd_backward($2); }
+  | KW_POSITION expr    {  $$ = make_cmd_position($2); }
+  | KW_POS expr         {  $$ = make_cmd_position($2); }
+  | KW_UP expr          {  $$ = make_cmd_up($2); }
+  | KW_DOWN expr        {  $$ = make_cmd_down($2); }
+  | KW_RIGHT expr       {  $$ = make_cmd_right($2); }
+  | KW_RT expr          {  $$ = make_cmd_right($2); }
+  | KW_LEFT expr        {  $$ = make_cmd_left($2); }
+  | KW_LT expr          {  $$ = make_cmd_left($2); }
+  | KW_HEADING expr     {  $$ = make_cmd_heading($2); }
+  | KW_HD expr          {  $$ = make_cmd_heading($2); }
+  | KW_COLOR expr       {  $$ = make_cmd_color($2); }
+  | KW_HOME expr        {  $$ = make_cmd_home($2); }
+  | KW_PRINT expr       {  $$ = make_cmd_print($2); }
+
 ;
 
 expr:

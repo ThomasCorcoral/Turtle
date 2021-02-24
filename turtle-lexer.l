@@ -14,7 +14,7 @@ DOUBLE ("+"|"-")?[0-9]*"."?[0-9]*(("e"|"E")("+"|"-")?[0-9]*)?
 
 %%
 
-{COMMENT}             { fprintf("This is a comment %s \n", yytext); }
+{COMMENT}             /* Comments */
 {DOUBLE}              { yylval.value = strtod(yytext, NULL); return VALUE; }
 "print"               { return KW_PRINT; }
 "forward"             { return KW_FORWARD; }
