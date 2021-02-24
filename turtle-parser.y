@@ -41,7 +41,7 @@ cmds:
 ;
 
 cmd:
-    KW_FORWARD expr   { /* TODO */ }
+    KW_FORWARD expr   {  $$ = make_cmd_forward($2); }
 ;
 
 expr:
