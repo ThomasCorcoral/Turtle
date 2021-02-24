@@ -26,7 +26,7 @@ void yyerror(struct ast *ret, const char *);
 
 %token            KW_PRINT    "print"
 %token            KW_FORWARD  "forward"
-%token            KW_FW        "fw"
+%token            KW_FW       "fw"
 %token            KW_BACKWARD "backward"
 %token            KW_BW       "bw"
 %token            KW_POSITION "position"
