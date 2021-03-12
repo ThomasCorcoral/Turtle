@@ -14,7 +14,7 @@ DOUBLE ("+"|"-")?[0-9]*"."?[0-9]*(("e"|"E")("+"|"-")?[0-9]*)?
 
 %%
 
-{COMMENT}             { fprintf("This is a comment %s \n", yytext); }
+{COMMENT}             /* Comments */
 {DOUBLE}              { yylval.value = strtod(yytext, NULL); return VALUE; }
 "print"               { return KW_PRINT; }
 "forward"             { return KW_FORWARD; }
@@ -33,6 +33,9 @@ DOUBLE ("+"|"-")?[0-9]*"."?[0-9]*(("e"|"E")("+"|"-")?[0-9]*)?
 "hd"                  { return KW_HD; }
 "color"               { return KW_COLOR; }
 "home"                { return KW_HOME; }
+"PI"                  { yylval.value = strtod("3.14159265358979323846", NULL); return VALUE; }
+"SQRT2"               { yylval.value = strtod("1.41421356237309504880", NULL); return VALUE; }
+"SQRT3"               { yylval.value = strtod("1.7320508075688772935", NULL); return VALUE; }
 [\n\t ]*              /* whitespace */
 .                     { fprintf(stderr, "Unknown token: '%s'\n", yytext); exit(EXIT_FAILURE); }
 
