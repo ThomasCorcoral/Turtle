@@ -80,6 +80,9 @@ struct ast_node *make_cmd_color(struct ast_node *expr);
 struct ast_node *make_cmd_home(struct ast_node *expr);
 struct ast_node *make_cmd_print(struct ast_node *expr);
 
+struct ast_node *make_binop(struct ast_node *left, struct ast_node *right, char c);
+struct ast_node *make_unop(struct ast_node *right, char c);
+
 // root of the abstract syntax tree
 struct ast {
   struct ast_node *unit;
@@ -87,6 +90,14 @@ struct ast {
 
 // do not forget to destroy properly! no leaks allowed!
 void ast_destroy(struct ast *self);
+// And recursivity isn't for LITTLE PLAYERS!
+void ast_node_destroy(struct ast_node *self);
+
+struct color {
+  double r;
+  double g;
+  double b;
+};
 
 // the execution context
 struct context {
@@ -94,10 +105,12 @@ struct context {
   double y;
   double angle;
   bool up;
+  struct color col;
 
   // TODO: add procedure handling
   // TODO: add variable handling
 };
+
 
 // create an initial context
 void context_create(struct context *self);
@@ -107,5 +120,6 @@ void ast_print(const struct ast *self);
 
 // evaluate the tree and generate some basic primitives
 void ast_eval(const struct ast *self, struct context *ctx);
+void cmd_simple_eval(const struct ast_node *self, struct context *ctx);
 
 #endif /* TURTLE_AST_H */

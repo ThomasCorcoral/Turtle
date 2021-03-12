@@ -80,12 +80,13 @@ cmd:
 
 expr:
     VALUE               { $$ = make_expr_value($1); }
-    | expr '+' expr     { $$ = $1 + $3; }
-    | expr '-' expr     { $$ = $1 - $3; }
-    | expr '*' expr     { $$ = $1 * $3; }
-    | expr '/' expr     { $$ = $1 / $3; }
-    | expr '^' expr     { $$ = $1 ^ $3; }
-    | '('expr')'        { $$ = $2; }
+    | '-' expr          { $$ = make_unop($2, '-'); }
+    | expr '+' expr     { $$ = make_binop($1, $3, '+'); }
+    | expr '-' expr     { $$ = make_binop($1, $3, '-'); }
+    | expr '*' expr     { $$ = make_binop($1, $3, '*'); }
+    | expr '/' expr     { $$ = make_binop($1, $3, '/'); }
+    | expr '^' expr     { $$ = make_binop($1, $3, '^'); }
+    | '(' expr ')'      { $$ = $2; }
     /* TODO: add identifier */
 ;
 
