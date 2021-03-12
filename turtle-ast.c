@@ -16,6 +16,17 @@ struct ast_node *make_expr_value(double value) {
   return node;
 }
 
+struct ast_node *make_binop(struct ast_node *left, struct ast_node *right, char c) {
+  struct ast_node *node = calloc(1, sizeof(struct ast_node));
+  node->kind = KIND_EXPR_BINOP;
+  // node->u.value = value;
+  node->u.op = c;
+  node->children_count = 2;
+  node->children[0] = left;
+  node->children[1] = right;
+  return node;
+}
+
 struct ast_node *make_cmd_backward(struct ast_node *expr) {
   struct ast_node *node = calloc(1, sizeof(struct ast_node));
   node->kind = KIND_CMD_SIMPLE;

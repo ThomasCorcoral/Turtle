@@ -44,6 +44,9 @@ void yyerror(struct ast *ret, const char *);
 
 %type <node> unit cmds cmd expr
 
+%left '+' '-'
+%left '*' '/'
+
 %%
 
 unit:
@@ -73,11 +76,16 @@ cmd:
   | KW_COLOR expr       {  $$ = make_cmd_color($2); }
   | KW_HOME expr        {  $$ = make_cmd_home($2); }
   | KW_PRINT expr       {  $$ = make_cmd_print($2); }
-
 ;
 
 expr:
-    VALUE             { $$ = make_expr_value($1); }
+    VALUE               { $$ = make_expr_value($1); }
+    | expr '+' expr     { $$ = $1 + $3; }
+    | expr '-' expr     { $$ = $1 - $3; }
+    | expr '*' expr     { $$ = $1 * $3; }
+    | expr '/' expr     { $$ = $1 / $3; }
+    | expr '^' expr     { $$ = $1 ^ $3; }
+    | '('expr')'        { $$ = $2; }
     /* TODO: add identifier */
 ;
 
