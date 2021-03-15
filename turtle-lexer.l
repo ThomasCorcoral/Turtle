@@ -9,9 +9,8 @@
 
 %option warn 8bit nodefault noyywrap
 
-COMMENT "#"+.*
-DOUBLE ("+"|"-")?[0-9]*"."?[0-9]*(("e"|"E")("+"|"-")?[0-9]*)?
-ADDITION DOUBLE"+"DOUBLE
+COMMENT     "#"+.*
+DOUBLE      [1-9]+[0-9]*|(0|[1-9]+[0-9]*)?("."[0-9]+|[1-9]+[0-9]*)(("e"|"E")?[0-9]+)?
 
 %%
 
@@ -34,14 +33,13 @@ ADDITION DOUBLE"+"DOUBLE
 "hd"                    { return KW_HD; }
 "color"                 { return KW_COLOR; }
 "home"                  { return KW_HOME; }
-"+"                     { return '+'; }
-"-"                     { return '-'; }
-"*"                     { return '*'; }
-"/"                     { return '/'; }
-"^"                     { return '^'; }
 "("                     { return '('; }
 ")"                     { return ')'; }
-{ADDITION}              { yylval.value = strtod(yytext, NULL); return ADDITION; }
+"^"                     { return '^'; }
+"*"                     { return '*'; }
+"/"                     { return '/'; }
+"+"                     { return '+'; }
+"-"                     { return '-'; }
 [\n\t ]*                /* whitespace */
 .                       { fprintf(stderr, "Unknown token: '%s'\n", yytext); exit(EXIT_FAILURE); }
 
