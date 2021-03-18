@@ -110,12 +110,14 @@ struct ast_node *make_cmd_heading(struct ast_node *expr) {
   return node;
 }
 
-struct ast_node *make_cmd_color(struct ast_node *expr) {
+struct ast_node *make_cmd_color(struct ast_node *expr, struct ast_node *expr2, struct ast_node *expr3) {
   struct ast_node *node = calloc(1, sizeof(struct ast_node));
   node->kind = KIND_CMD_SIMPLE;
   node->u.cmd = CMD_COLOR;
-  node->children_count = 1;
+  node->children_count = 3;
   node->children[0] = expr;
+  node->children[1] = expr2;
+  node->children[2] = expr3;
   return node;
 }
 
@@ -143,16 +145,13 @@ struct ast_node *make_cmd_print(struct ast_node *expr) {
 
 void ast_destroy(struct ast *self) {
   ast_node_destroy(self->unit);
-  free(self->unit);
 }
 
 void ast_node_destroy(struct ast_node *self){
   self->kind = 0;
   self->u.cmd = 0;
   self->u.func = 0;
-  if(self->u.name != NULL){
-    free(self->u.name);
-  }
+  self->u.name = "";
   self->u.op = '\0';
   self->u.value = 0;
   if(self->children != NULL){
@@ -186,67 +185,179 @@ void context_create(struct context *self) {
  */
 void cmd_simple_eval(const struct ast_node *self, struct context *ctx){
   switch (self->u.cmd){
-  case CMD_UP:
-    ctx->up = true;
-    break;
-  case CMD_DOWN:
-    ctx->up = false;
-    break;
-  case CMD_RIGHT:
-    if(ctx->angle >= 270 || ctx->angle <= 90){
-      ctx->angle = (ctx->angle + self->u.value) % 360;
-    }else{
-      ctx->angle = (ctx->angle - self->u.value) % 360;
+    case CMD_UP:
+      ctx->up = true;
+      break;
+    case CMD_DOWN:
+      ctx->up = false;
+      break;
+    case CMD_RIGHT:
+      ctx->angle = (int)(ctx->angle + eval_expr(self->children[0])) % 360;
+      break;
+    case CMD_LEFT:
+      ctx->angle = (int)(ctx->angle - eval_expr(self->children[0])) % 360;
+      break;
+    case CMD_HEADING:
+      ctx->angle = eval_expr(self->children[0]);
+      break;
+    case CMD_FORWARD:
+    {
+      float eval = eval_expr(self->children[0]);
+      ctx->x = ctx->x + cos(ctx->angle * (PI/180)) * eval;
+      ctx->y = ctx->y + sin(ctx->angle * (PI/180)) * eval;
+      break;
     }
-    break;
-  case CMD_LEFT:
-    /* code */
-    break;
-  case CMD_HEADING:
-    /* code */
-    break;
-  case CMD_FORWARD:
-    /* code */
-    break;
-  case CMD_BACKWARD:
-    /* code */
-    break;
-  case CMD_POSITION:
-    /* code */
-    break;
-  case CMD_HOME:
-    /* code */
-    break;
-  case CMD_COLOR:
-    /* code */
-    break;
-  case CMD_PRINT:
-    /* code */
-    break;
+    case CMD_BACKWARD:
+    {
+      float eval = eval_expr(self->children[0]);
+      ctx->x = ctx->x - cos(ctx->angle * (PI/180)) * eval;
+      ctx->y = ctx->y - sin(ctx->angle * (PI/180)) * eval;
+      break;
+    }
+    case CMD_POSITION:
+      ctx->x = eval_expr(self->children[0]);
+      ctx->y = eval_expr(self->children[1]);
+      break;
+    case CMD_HOME:
+      context_create(ctx);
+      break;
+    case CMD_COLOR:
+    {
+      ctx->col.r = eval_expr(self->children[0]); 
+      ctx->col.g = eval_expr(self->children[1]);
+      ctx->col.b = eval_expr(self->children[2]);
+      break;
+    }
+    case CMD_PRINT:
+      ast_node_print(self);
+      break;
   }
 }
 
-void ast_eval(const struct ast *self, struct context *ctx) {
-  switch(self->unit->kind){
-    case KIND_CMD_SIMPLE: break;
+float eval_expr(const struct ast_node *self){
+  switch(self->kind){
+    case KIND_EXPR_FUNC: break;
+    case KIND_EXPR_VALUE: 
+      return self->u.value;
+    case KIND_EXPR_UNOP: 
+      return -eval_expr(self->children[0]);
+    case KIND_EXPR_BINOP:
+    {
+      float first = eval_expr(self->children[0]);
+      float second = eval_expr(self->children[1]); 
+      switch(self->u.op){
+        case '*':
+          return first * second;
+        case '/':
+          return first / second;
+        case '+':
+          return first + second;
+        case '-':
+          return first - second;
+        case '^':
+          return pow(first, second);
+      }
+    }
+    case KIND_EXPR_BLOCK: break;
+    case KIND_EXPR_NAME: break;
+    default:
+      break;
+  }
+  return 0;
+}
+
+void ast_node_eval(const struct ast_node *self, struct context *ctx) {
+  switch(self->kind){
+    case KIND_CMD_SIMPLE: 
+      cmd_simple_eval(self, ctx);
+      break;
     case KIND_CMD_REPEAT: break;
     case KIND_CMD_BLOCK: break;
     case KIND_CMD_PROC: break;
     case KIND_CMD_CALL: break;
     case KIND_CMD_SET: break;
-    case KIND_EXPR_FUNC: break;
-    case KIND_EXPR_VALUE: break;
-    case KIND_EXPR_UNOP: break;
-    case KIND_EXPR_BINOP: break;
-    case KIND_EXPR_BLOCK: break;
-    case KIND_EXPR_NAME: break;
+    default:
+      break;
   }
+  if(self->next != NULL){
+    ast_node_eval(self->next, ctx);
+  }
+}
+
+void ast_eval(const struct ast *self, struct context *ctx) {
+  ast_node_eval(self->unit, ctx);
 }
 
 /*
  * print
  */
 
+void cmd_simple_eval_print(const struct ast_node *self){
+  switch (self->u.cmd){
+    case CMD_UP:
+      fprintf(stderr, "CMD_UP, put up to true\n");
+      break;
+    case CMD_DOWN:
+      fprintf(stderr, "CMD_DOWN, put up to false\n");
+      break;
+    case CMD_RIGHT:
+      fprintf(stderr, "CMD_RIGHT, turn angle to right add %f\n", eval_expr(self->children[0]));
+      break;
+    case CMD_LEFT:
+      fprintf(stderr, "CMD_LEFT, turn angle to left substract %f\n", eval_expr(self->children[0]));
+      break;
+    case CMD_HEADING:
+      fprintf(stderr, "CMD_HEADING, put the angle to the value : %f\n", eval_expr(self->children[0]));
+      break;
+    case CMD_FORWARD:
+      fprintf(stderr, "CMD_FORWARD, forward with value : %f\n", eval_expr(self->children[0]));
+      break;
+    case CMD_BACKWARD:
+      fprintf(stderr, "CMD_BACKWARD, backward with value : %f\n", eval_expr(self->children[0]));
+      break;
+    case CMD_POSITION:
+      fprintf(stderr, "CMD_POSITION, set new position x : %f / y : %f\n", eval_expr(self->children[0]), eval_expr(self->children[1]));
+      break;
+    case CMD_HOME:
+      fprintf(stderr, "CMD_HOME, reinitialise context\n");
+      break;
+    case CMD_COLOR:
+      fprintf(stderr, "CMD_COLOR, new color : %f, %f, %f\n", eval_expr(self->children[0]), eval_expr(self->children[1]), eval_expr(self->children[2]));
+      break;
+    case CMD_PRINT:
+      ast_node_print(self);
+      break;
+  }
+}
+
+void ast_node_print(const struct ast_node *self) {
+  switch(self->kind){
+    case KIND_CMD_SIMPLE: 
+      cmd_simple_eval_print(self);
+      break;
+    case KIND_CMD_REPEAT: 
+      fprintf(stderr, "KIND_CMD_REPEAT\n");
+      break;
+    case KIND_CMD_BLOCK: 
+      fprintf(stderr, "KIND_CMD_BLOCK\n");
+      break;
+    case KIND_CMD_PROC:  
+      fprintf(stderr, "KIND_CMD_PROC\n");
+      break;
+    case KIND_CMD_CALL:  
+      fprintf(stderr, "KIND_CMD_CALL\n");
+      break;
+    case KIND_CMD_SET:  
+      fprintf(stderr, "KIND_CMD_SET\n");
+      break;
+    default:
+      break;
+  }
+  if(self->next != NULL){
+    ast_node_print(self->next);
+  }
+}
+
 void ast_print(const struct ast *self) {
-  
+  ast_node_print(self->unit);
 }

@@ -73,21 +73,20 @@ cmd:
   | KW_LT expr          {  $$ = make_cmd_left($2); }
   | KW_HEADING expr     {  $$ = make_cmd_heading($2); }
   | KW_HD expr          {  $$ = make_cmd_heading($2); }
-  | KW_COLOR expr       {  $$ = make_cmd_color($2); }
+  | KW_COLOR expr expr expr       {  $$ = make_cmd_color($2, $3, $4); }
   | KW_HOME expr        {  $$ = make_cmd_home($2); }
   | KW_PRINT expr       {  $$ = make_cmd_print($2); }
 ;
 
 expr:
     VALUE               { $$ = make_expr_value($1); }
-    | '-' expr          { $$ = make_unop($2, '-'); }
     | expr '+' expr     { $$ = make_binop($1, $3, '+'); }
     | expr '-' expr     { $$ = make_binop($1, $3, '-'); }
     | expr '*' expr     { $$ = make_binop($1, $3, '*'); }
     | expr '/' expr     { $$ = make_binop($1, $3, '/'); }
     | expr '^' expr     { $$ = make_binop($1, $3, '^'); }
     | '(' expr ')'      { $$ = $2; }
-    /* TODO: add identifier */
+    | '-' expr          { $$ = make_unop($2, '-'); }
 ;
 
 %%

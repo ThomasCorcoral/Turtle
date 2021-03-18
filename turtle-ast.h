@@ -65,8 +65,7 @@ struct ast_node {
 };
 
 
-// TODO: make some constructors to use in parser.y
-// for example:
+// Constructors to use in parser.y
 struct ast_node *make_expr_value(double value);
 struct ast_node *make_cmd_forward(struct ast_node *expr);
 struct ast_node *make_cmd_backward(struct ast_node *expr);
@@ -76,10 +75,9 @@ struct ast_node *make_cmd_down(struct ast_node *expr);
 struct ast_node *make_cmd_right(struct ast_node *expr);
 struct ast_node *make_cmd_left(struct ast_node *expr);
 struct ast_node *make_cmd_heading(struct ast_node *expr);
-struct ast_node *make_cmd_color(struct ast_node *expr);
+struct ast_node *make_cmd_color(struct ast_node *expr, struct ast_node *expr2, struct ast_node *expr3);
 struct ast_node *make_cmd_home(struct ast_node *expr);
 struct ast_node *make_cmd_print(struct ast_node *expr);
-
 struct ast_node *make_binop(struct ast_node *left, struct ast_node *right, char c);
 struct ast_node *make_unop(struct ast_node *right, char c);
 
@@ -90,13 +88,14 @@ struct ast {
 
 // do not forget to destroy properly! no leaks allowed!
 void ast_destroy(struct ast *self);
+
 // And recursivity isn't for LITTLE PLAYERS!
 void ast_node_destroy(struct ast_node *self);
 
 struct color {
-  double r;
-  double g;
-  double b;
+  float r;
+  float g;
+  float b;
 };
 
 // the execution context
@@ -117,9 +116,12 @@ void context_create(struct context *self);
 
 // print the tree as if it was a Turtle program
 void ast_print(const struct ast *self);
+void ast_node_print(const struct ast_node *self);
+void cmd_simple_eval_print(const struct ast_node *self);
 
 // evaluate the tree and generate some basic primitives
 void ast_eval(const struct ast *self, struct context *ctx);
 void cmd_simple_eval(const struct ast_node *self, struct context *ctx);
+float eval_expr(const struct ast_node *self);
 
 #endif /* TURTLE_AST_H */
