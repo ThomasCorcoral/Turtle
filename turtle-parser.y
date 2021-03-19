@@ -64,6 +64,8 @@ void yyerror(struct ast *ret, const char *);
 
 %left '+' '-'
 %left '*' '/'
+%precedence NEG
+%right '^'
 
 %%
 
@@ -107,20 +109,19 @@ cmd:
 
 expr:
     VALUE               { $$ = make_expr_value($1); }
+    | '(' expr ')'      { $$ = $2; }
+    | '-' expr %prec NEG     { $$ = make_unop($2, '-'); }
+    | expr '/' expr     { $$ = make_binop($1, $3, '/'); }
+    | expr '*' expr     { $$ = make_binop($1, $3, '*'); }
+    | expr '^' expr     { $$ = make_binop($1, $3, '^'); }
     | expr '+' expr     { $$ = make_binop($1, $3, '+'); }
     | expr '-' expr     { $$ = make_binop($1, $3, '-'); }
-    | expr '*' expr     { $$ = make_binop($1, $3, '*'); }
-    | expr '/' expr     { $$ = make_binop($1, $3, '/'); }
-    | expr '^' expr     { $$ = make_binop($1, $3, '^'); }
-    | '(' expr ')'      { $$ = $2; }
-    | '-' expr          { $$ = make_unop($2, '-'); }
     | KW_SIN expr       { $$ = make_intern_expr($2, "sin"); }
     | KW_COS expr       { $$ = make_intern_expr($2, "cos"); }
     | KW_TAN expr       { $$ = make_intern_expr($2, "tan"); }
     | KW_SQRT expr      { $$ = make_intern_expr($2, "sqrt"); }
     | KW_RANDOM expr    { $$ = make_intern_expr($2, "random"); }
 ;
-
 
 %%
 

@@ -220,8 +220,8 @@ void cmd_simple_eval(const struct ast_node *self, struct context *ctx){
     case CMD_FORWARD:
     {
       float eval = eval_expr(self->children[0]);
-      ctx->x = ctx->x + cos(ctx->angle * (PI/180)) * eval;
-      ctx->y = ctx->y + sin(ctx->angle * (PI/180)) * eval;
+      ctx->x = ctx->x + cos(((int)(ctx->angle - 90) % 360) * (PI/180)) * eval;
+      ctx->y = ctx->y + sin(((int)(ctx->angle - 90) % 360) * (PI/180)) * eval;
       if(!ctx->up){
         fprintf(stdout, "LineTo %f %f\n", ctx->x, ctx->y);
       }else{
@@ -232,8 +232,8 @@ void cmd_simple_eval(const struct ast_node *self, struct context *ctx){
     case CMD_BACKWARD:
     {
       float eval = eval_expr(self->children[0]);
-      ctx->x = ctx->x - cos(ctx->angle * (PI/180)) * eval;
-      ctx->y = ctx->y - sin(ctx->angle * (PI/180)) * eval;
+      ctx->x = ctx->x - cos(((int)(ctx->angle - 90) % 360) * (PI/180)) * eval;
+      ctx->y = ctx->y - sin(((int)(ctx->angle - 90) % 360) * (PI/180)) * eval;
       if(!ctx->up){
         fprintf(stdout, "LineTo %f %f\n", ctx->x, ctx->y);
       }else{
