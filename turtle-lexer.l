@@ -40,6 +40,22 @@ DOUBLE      ([1-9]+[0-9]*|(0|[1-9]+[0-9]*)?("."[0-9]+|[1-9]+[0-9]*)(("e"|"E")?[0
 "/"                     { return '/'; }
 "+"                     { return '+'; }
 "-"                     { return '-'; }
+"{"                     { return '{'; }
+"}"                     { return '}'; }
+"red"                   { return KW_RED; }
+"green"                 { return KW_GREEN; }
+"blue"                  { return KW_BLUE; }
+"cyan"                  { return KW_CYAN; }
+"magenta"               { return KW_MAGENTA; }
+"yellow"                { return KW_YELLOW; }
+"black"                 { return KW_BLACK; }
+"gray"                  { return KW_GRAY; }
+"white"                 { return KW_WHITE; }
+"sin"                   { return KW_SIN; }
+"cos"                   { return KW_COS; }
+"tan"                   { return KW_TAN; }
+"sqrt"                  { return KW_SQRT; }
+"random"                { return KW_RANDOM; }
 [\n\t ]*                /* whitespace */
 .                       { fprintf(stderr, "Unknown token: '%s'\n", yytext); exit(EXIT_FAILURE); }
 

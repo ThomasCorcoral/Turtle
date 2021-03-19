@@ -139,6 +139,25 @@ struct ast_node *make_cmd_print(struct ast_node *expr) {
   return node;
 }
 
+struct ast_node *make_intern_expr(struct ast_node *expr, char* func){
+  struct ast_node *node = calloc(1, sizeof(struct ast_node));
+  node->kind = KIND_EXPR_FUNC;
+  if(strcmp(func, "sin") == 0){
+    node->u.func = FUNC_SIN;
+  }else if(strcmp(func, "cos") == 0){
+    node->u.func = FUNC_COS;
+  }else if(strcmp(func, "tan") == 0){
+    node->u.func = FUNC_TAN;
+  }else if(strcmp(func, "sqrt") == 0){
+    node->u.func = FUNC_SQRT;
+  }else{
+    node->u.func = FUNC_RANDOM;
+  }
+  node->children_count = 1;
+  node->children[0] = expr;
+  return node;
+}
+
 /*
  * destroy
  */
@@ -154,10 +173,8 @@ void ast_node_destroy(struct ast_node *self){
   self->u.name = "";
   self->u.op = '\0';
   self->u.value = 0;
-  if(self->children != NULL){
-    for(size_t i = 0; i<self->children_count; i++){
-      ast_node_destroy(self->children[i]);
-    }
+  for(size_t i = 0; i<self->children_count; i++){
+    ast_node_destroy(self->children[i]);
   }
   self->children_count = 0;
   if(self->next != NULL){
@@ -205,6 +222,11 @@ void cmd_simple_eval(const struct ast_node *self, struct context *ctx){
       float eval = eval_expr(self->children[0]);
       ctx->x = ctx->x + cos(ctx->angle * (PI/180)) * eval;
       ctx->y = ctx->y + sin(ctx->angle * (PI/180)) * eval;
+      if(!ctx->up){
+        fprintf(stdout, "LineTo %f %f\n", ctx->x, ctx->y);
+      }else{
+        fprintf(stdout, "MoveTo %f %f\n", ctx->x, ctx->y);
+      }
       break;
     }
     case CMD_BACKWARD:
@@ -212,34 +234,58 @@ void cmd_simple_eval(const struct ast_node *self, struct context *ctx){
       float eval = eval_expr(self->children[0]);
       ctx->x = ctx->x - cos(ctx->angle * (PI/180)) * eval;
       ctx->y = ctx->y - sin(ctx->angle * (PI/180)) * eval;
+      if(!ctx->up){
+        fprintf(stdout, "LineTo %f %f\n", ctx->x, ctx->y);
+      }else{
+        fprintf(stdout, "MoveTo %f %f\n", ctx->x, ctx->y);
+      }
       break;
     }
     case CMD_POSITION:
       ctx->x = eval_expr(self->children[0]);
       ctx->y = eval_expr(self->children[1]);
+      fprintf(stdout, "MoveTo %f %f\n", ctx->x, ctx->y);
       break;
     case CMD_HOME:
       context_create(ctx);
+      fprintf(stdout, "MoveTo %f %f\n", ctx->x, ctx->y);
+      fprintf(stdout, "Colro %f %f %f\n", ctx->col.r, ctx->col.g, ctx->col.b);
       break;
     case CMD_COLOR:
     {
       ctx->col.r = eval_expr(self->children[0]); 
       ctx->col.g = eval_expr(self->children[1]);
       ctx->col.b = eval_expr(self->children[2]);
+      fprintf(stdout, "Color %f %f %f\n", ctx->col.r, ctx->col.g, ctx->col.b);
       break;
     }
     case CMD_PRINT:
-      ast_node_print(self);
+    {
+      fprintf(stderr, "%f\n", eval_expr(self->children[0]));
       break;
+    }
   }
 }
 
 float eval_expr(const struct ast_node *self){
   switch(self->kind){
-    case KIND_EXPR_FUNC: break;
+    case KIND_EXPR_FUNC: 
+      switch (self->u.func)
+      {
+      case FUNC_COS:
+        return cos(eval_expr(self->children[0]) * (PI/180));
+      case FUNC_RANDOM:
+        return rand() * eval_expr(self->children[0]);
+      case FUNC_SIN:
+        return sin(eval_expr(self->children[0]) * (PI/180));
+      case FUNC_SQRT:
+        return sqrt(eval_expr(self->children[0]));
+      case FUNC_TAN:
+        return tan(eval_expr(self->children[0]) * (PI/180));
+      }
     case KIND_EXPR_VALUE: 
       return self->u.value;
-    case KIND_EXPR_UNOP: 
+    case KIND_EXPR_UNOP:
       return -eval_expr(self->children[0]);
     case KIND_EXPR_BINOP:
     {
@@ -325,7 +371,7 @@ void cmd_simple_eval_print(const struct ast_node *self){
       fprintf(stderr, "CMD_COLOR, new color : %f, %f, %f\n", eval_expr(self->children[0]), eval_expr(self->children[1]), eval_expr(self->children[2]));
       break;
     case CMD_PRINT:
-      ast_node_print(self);
+      fprintf(stderr, "CMD_PRINT, print : %f\n", eval_expr(self->children[0]));
       break;
   }
 }
