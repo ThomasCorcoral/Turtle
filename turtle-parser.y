@@ -131,7 +131,7 @@ expr:
     | KW_COS expr       { $$ = make_intern_expr($2, "cos"); }
     | KW_TAN expr       { $$ = make_intern_expr($2, "tan"); } 
     | KW_SQRT expr      { $$ = make_intern_expr($2, "sqrt"); }
-    | KW_RANDOM expr    { $$ = make_intern_expr($2, "random"); }
+    | KW_RANDOM '('expr','expr')'   { $$ = make_intern_expr_rd($3, $5); }
 ;
 
 %%

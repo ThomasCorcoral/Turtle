@@ -13,7 +13,6 @@ struct ast_node *make_expr_value(double value) {
   struct ast_node *node = calloc(1, sizeof(struct ast_node));
   node->kind = KIND_EXPR_VALUE;
   node->u.value = value;
-  fprintf(stderr, "TEST VALEUR : %f\n", node->u.value);
   return node;
 }
 
@@ -166,11 +165,19 @@ struct ast_node *make_intern_expr(struct ast_node *expr, char* func){
     node->u.func = FUNC_TAN;
   }else if(strcmp(func, "sqrt") == 0){
     node->u.func = FUNC_SQRT;
-  }else{
-    node->u.func = FUNC_RANDOM;
   }
   node->children_count = 1;
   node->children[0] = expr;
+  return node;
+}
+
+struct ast_node *make_intern_expr_rd(struct ast_node *expr, struct ast_node *expr2){
+  struct ast_node *node = calloc(1, sizeof(struct ast_node));
+  node->kind = KIND_EXPR_FUNC;
+  node->u.func = FUNC_RANDOM;
+  node->children_count = 2;
+  node->children[0] = expr;
+  node->children[1] = expr2;
   return node;
 }
 
@@ -315,7 +322,6 @@ void cmd_simple_eval(const struct ast_node *self, struct context *ctx){
       break;
     }
     case CMD_POSITION:
-      fprintf(stderr, "TEST PASSAGE\n");
       ctx->x = eval_expr(self->children[0], ctx);
       ctx->y = eval_expr(self->children[1], ctx);
       fprintf(stdout, "MoveTo %f %f\n", ctx->x, ctx->y);
@@ -356,12 +362,18 @@ float eval_expr(const struct ast_node *self, struct context *ctx){
       {
       case FUNC_COS:
         return cos(eval_expr(self->children[0], ctx) * (PI/180));
-      case FUNC_RANDOM:
-        return rand() * eval_expr(self->children[0], ctx);
+      case FUNC_RANDOM:{
+        float low = eval_expr(self->children[0], ctx);
+        float hight = eval_expr(self->children[1], ctx);
+        return (float)rand()/(float)(RAND_MAX) * (hight-low) + low;}
       case FUNC_SIN:
         return sin(eval_expr(self->children[0], ctx) * (PI/180));
-      case FUNC_SQRT:
-        return sqrt(eval_expr(self->children[0], ctx));
+      case FUNC_SQRT:{
+        float num = eval_expr(self->children[0], ctx);
+        if(num < 0){
+          // TODO break the program
+        }
+        return sqrt(num);}
       case FUNC_TAN:
         return tan(eval_expr(self->children[0], ctx) * (PI/180));
       }
