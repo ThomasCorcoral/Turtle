@@ -67,6 +67,7 @@ struct ast_node {
 
 // Constructors to use in parser.y
 struct ast_node *make_expr_value(double value);
+struct ast_node *make_name_value(char* value);
 struct ast_node *make_cmd_forward(struct ast_node *expr);
 struct ast_node *make_cmd_backward(struct ast_node *expr);
 struct ast_node *make_cmd_position(struct ast_node *expr);
@@ -78,9 +79,11 @@ struct ast_node *make_cmd_heading(struct ast_node *expr);
 struct ast_node *make_cmd_color(struct ast_node *expr, struct ast_node *expr2, struct ast_node *expr3);
 struct ast_node *make_cmd_home(struct ast_node *expr);
 struct ast_node *make_cmd_print(struct ast_node *expr);
-struct ast_node *make_binop(struct ast_node *left, struct ast_node *right, char c);
-struct ast_node *make_unop(struct ast_node *right, char c);
 
+struct ast_node *make_cmd_set(struct ast_node *name, struct ast_node *expr);
+
+struct ast_node *make_unop(struct ast_node *right, char c);
+struct ast_node *make_binop(struct ast_node *left, struct ast_node *right, char c);
 struct ast_node *make_intern_expr(struct ast_node *expr, char* func);
 
 // root of the abstract syntax tree
@@ -100,6 +103,24 @@ struct color {
   float b;
 };
 
+
+struct variable{
+  char* name;
+  float value; 
+};
+
+struct map{
+  struct variable* map_values;
+  size_t size;
+  size_t capacity;
+};
+
+void map_add(struct map *self, char* name, float val);
+void map_grow(struct map* self);
+void map_destroy(struct map* self);
+void map_create(struct map* self);
+float get_value(struct map* self, char* name);
+
 // the execution context
 struct context {
   double x;
@@ -107,14 +128,13 @@ struct context {
   double angle;
   bool up;
   struct color col;
-
-  // TODO: add procedure handling
-  // TODO: add variable handling
+  struct map variables_map;
 };
 
 
 // create an initial context
 void context_create(struct context *self);
+void context_destroy(struct context *self);
 
 // print the tree as if it was a Turtle program
 void ast_print(const struct ast *self);
@@ -124,6 +144,8 @@ void cmd_simple_eval_print(const struct ast_node *self);
 // evaluate the tree and generate some basic primitives
 void ast_eval(const struct ast *self, struct context *ctx);
 void cmd_simple_eval(const struct ast_node *self, struct context *ctx);
-float eval_expr(const struct ast_node *self);
+void cmd_set_var(const struct ast_node *self, struct context *ctx);
+float eval_expr(const struct ast_node *self, struct context *ctx);
+float eval_expr_print(const struct ast_node *self);
 
 #endif /* TURTLE_AST_H */

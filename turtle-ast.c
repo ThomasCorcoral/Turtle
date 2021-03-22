@@ -7,12 +7,21 @@
 #include <string.h>
 #include <math.h>
 
-#define PI 3.141592653589793
+#define PI 3.14159265358979323846
 
 struct ast_node *make_expr_value(double value) {
   struct ast_node *node = calloc(1, sizeof(struct ast_node));
   node->kind = KIND_EXPR_VALUE;
   node->u.value = value;
+  return node;
+}
+
+struct ast_node *make_name_value(char* value){
+  struct ast_node *node = calloc(1, sizeof(struct ast_node));
+  node->kind = KIND_EXPR_NAME;
+  char* copy = calloc(strlen(value)+1, sizeof(char)); 
+  strcpy(copy, value);
+  node->u.name = copy;
   return node;
 }
 
@@ -139,6 +148,15 @@ struct ast_node *make_cmd_print(struct ast_node *expr) {
   return node;
 }
 
+struct ast_node *make_cmd_set(struct ast_node *name, struct ast_node *expr){
+  struct ast_node *node = calloc(1, sizeof(struct ast_node));
+  node->kind = KIND_CMD_SET;
+  node->children_count = 2;
+  node->children[0] = name;
+  node->children[1] = expr;
+  return node;
+}
+
 struct ast_node *make_intern_expr(struct ast_node *expr, char* func){
   struct ast_node *node = calloc(1, sizeof(struct ast_node));
   node->kind = KIND_EXPR_FUNC;
@@ -166,11 +184,19 @@ void ast_destroy(struct ast *self) {
   ast_node_destroy(self->unit);
 }
 
+void map_destroy(struct map* self) {
+  self->size = 0;
+	self->capacity = 0;
+	free(self->map_values);
+}
+
 void ast_node_destroy(struct ast_node *self){
-  self->kind = 0;
+  if(self->kind == KIND_EXPR_NAME){
+    free(self->u.name);
+  }
   self->u.cmd = 0;
   self->u.func = 0;
-  self->u.name = "";
+  self->kind = 0;
   self->u.op = '\0';
   self->u.value = 0;
   for(size_t i = 0; i<self->children_count; i++){
@@ -195,11 +221,59 @@ void context_create(struct context *self) {
   self->col.r = 0; 
   self->col.b = 0;
   self->col.g = 0;
+  map_create(&(self->variables_map));
+  map_add(&(self->variables_map), "PI", 3.14159265358979323846);
+  map_add(&(self->variables_map), "SQRT2", 1.41421356237309504880);
+  map_add(&(self->variables_map), "SQRT3", 1.7320508075688772935);
+}
+
+void context_destroy(struct context *self){
+  self->x = 0;
+  self->y = 0;
+  self->up = false;
+  self->angle = 0;
+  self->col.r = 0; 
+  self->col.b = 0;
+  self->col.g = 0;
+  map_destroy(&(self->variables_map));
 }
 
 /*
  * eval
  */
+
+float get_value(struct map* self, char* name){
+  for(size_t i = 0; i < self->size; i++){
+    if(strcmp(name, self->map_values[i].name) == 0){
+      return self->map_values[i].value;
+    }
+  }
+  return 0;
+}
+
+void map_create(struct map* self){
+	self->size = 0;
+	self->capacity = 10;
+	self->map_values = calloc(self->capacity, sizeof(struct variable));
+}
+
+void map_grow(struct map* self){
+	self->capacity *= 2;	//O(1) amorti
+	struct variable* new_data = calloc(self->capacity, sizeof(struct variable));	// nouveau tableau
+	memcpy(new_data, self->map_values, self->size * sizeof(struct variable));	// Copie
+	free(self->map_values);	// Suppression de l'ancien
+	self->map_values = new_data;	// Copie du nouveau dans la structure
+}
+
+void map_add(struct map *self, char* name, float val){
+	if (self->size == self->capacity){
+		map_grow(self);
+	}
+	self->map_values[self->size].name = name;
+	self->map_values[self->size].value = val;
+	self->size += 1;
+}
+
 void cmd_simple_eval(const struct ast_node *self, struct context *ctx){
   switch (self->u.cmd){
     case CMD_UP:
@@ -209,17 +283,17 @@ void cmd_simple_eval(const struct ast_node *self, struct context *ctx){
       ctx->up = false;
       break;
     case CMD_RIGHT:
-      ctx->angle = (int)(ctx->angle + eval_expr(self->children[0])) % 360;
+      ctx->angle = (int)(ctx->angle + eval_expr(self->children[0], ctx)) % 360;
       break;
     case CMD_LEFT:
-      ctx->angle = (int)(ctx->angle - eval_expr(self->children[0])) % 360;
+      ctx->angle = (int)(ctx->angle - eval_expr(self->children[0], ctx)) % 360;
       break;
     case CMD_HEADING:
-      ctx->angle = eval_expr(self->children[0]);
+      ctx->angle = eval_expr(self->children[0], ctx);
       break;
     case CMD_FORWARD:
     {
-      float eval = eval_expr(self->children[0]);
+      float eval = eval_expr(self->children[0], ctx);
       ctx->x = ctx->x + cos(((int)(ctx->angle - 90) % 360) * (PI/180)) * eval;
       ctx->y = ctx->y + sin(((int)(ctx->angle - 90) % 360) * (PI/180)) * eval;
       if(!ctx->up){
@@ -231,7 +305,7 @@ void cmd_simple_eval(const struct ast_node *self, struct context *ctx){
     }
     case CMD_BACKWARD:
     {
-      float eval = eval_expr(self->children[0]);
+      float eval = eval_expr(self->children[0], ctx);
       ctx->x = ctx->x - cos(((int)(ctx->angle - 90) % 360) * (PI/180)) * eval;
       ctx->y = ctx->y - sin(((int)(ctx->angle - 90) % 360) * (PI/180)) * eval;
       if(!ctx->up){
@@ -242,55 +316,59 @@ void cmd_simple_eval(const struct ast_node *self, struct context *ctx){
       break;
     }
     case CMD_POSITION:
-      ctx->x = eval_expr(self->children[0]);
-      ctx->y = eval_expr(self->children[1]);
+      ctx->x = eval_expr(self->children[0], ctx);
+      ctx->y = eval_expr(self->children[1], ctx);
       fprintf(stdout, "MoveTo %f %f\n", ctx->x, ctx->y);
       break;
     case CMD_HOME:
       context_create(ctx);
       fprintf(stdout, "MoveTo %f %f\n", ctx->x, ctx->y);
-      fprintf(stdout, "Colro %f %f %f\n", ctx->col.r, ctx->col.g, ctx->col.b);
+      fprintf(stdout, "Color %f %f %f\n", ctx->col.r, ctx->col.g, ctx->col.b);
       break;
     case CMD_COLOR:
     {
-      ctx->col.r = eval_expr(self->children[0]); 
-      ctx->col.g = eval_expr(self->children[1]);
-      ctx->col.b = eval_expr(self->children[2]);
+      ctx->col.r = eval_expr(self->children[0], ctx); 
+      ctx->col.g = eval_expr(self->children[1], ctx);
+      ctx->col.b = eval_expr(self->children[2], ctx);
       fprintf(stdout, "Color %f %f %f\n", ctx->col.r, ctx->col.g, ctx->col.b);
       break;
     }
     case CMD_PRINT:
     {
-      fprintf(stderr, "%f\n", eval_expr(self->children[0]));
+      fprintf(stderr, "%f\n", eval_expr(self->children[0], ctx));
       break;
     }
   }
 }
 
-float eval_expr(const struct ast_node *self){
+void cmd_set_var(const struct ast_node *self, struct context *ctx){
+  map_add(&(ctx->variables_map), self->children[0]->u.name, self->children[1]->u.value);
+}
+
+float eval_expr(const struct ast_node *self, struct context *ctx){
   switch(self->kind){
     case KIND_EXPR_FUNC: 
       switch (self->u.func)
       {
       case FUNC_COS:
-        return cos(eval_expr(self->children[0]) * (PI/180));
+        return cos(eval_expr(self->children[0], ctx) * (PI/180));
       case FUNC_RANDOM:
-        return rand() * eval_expr(self->children[0]);
+        return rand() * eval_expr(self->children[0], ctx);
       case FUNC_SIN:
-        return sin(eval_expr(self->children[0]) * (PI/180));
+        return sin(eval_expr(self->children[0], ctx) * (PI/180));
       case FUNC_SQRT:
-        return sqrt(eval_expr(self->children[0]));
+        return sqrt(eval_expr(self->children[0], ctx));
       case FUNC_TAN:
-        return tan(eval_expr(self->children[0]) * (PI/180));
+        return tan(eval_expr(self->children[0], ctx) * (PI/180));
       }
     case KIND_EXPR_VALUE: 
       return self->u.value;
     case KIND_EXPR_UNOP:
-      return -eval_expr(self->children[0]);
+      return -eval_expr(self->children[0], ctx);
     case KIND_EXPR_BINOP:
     {
-      float first = eval_expr(self->children[0]);
-      float second = eval_expr(self->children[1]); 
+      float first = eval_expr(self->children[0], ctx);
+      float second = eval_expr(self->children[1], ctx); 
       switch(self->u.op){
         case '*':
           return first * second;
@@ -305,7 +383,8 @@ float eval_expr(const struct ast_node *self){
       }
     }
     case KIND_EXPR_BLOCK: break;
-    case KIND_EXPR_NAME: break;
+    case KIND_EXPR_NAME:
+      return get_value(&(ctx->variables_map), self->u.name);
     default:
       break;
   }
@@ -321,7 +400,9 @@ void ast_node_eval(const struct ast_node *self, struct context *ctx) {
     case KIND_CMD_BLOCK: break;
     case KIND_CMD_PROC: break;
     case KIND_CMD_CALL: break;
-    case KIND_CMD_SET: break;
+    case KIND_CMD_SET: 
+      cmd_set_var(self, ctx);
+      break;
     default:
       break;
   }
@@ -338,6 +419,52 @@ void ast_eval(const struct ast *self, struct context *ctx) {
  * print
  */
 
+float eval_expr_print(const struct ast_node *self){
+  switch(self->kind){
+    case KIND_EXPR_FUNC: 
+      switch (self->u.func)
+      {
+      case FUNC_COS:
+        return cos(eval_expr_print(self->children[0]) * (PI/180));
+      case FUNC_RANDOM:
+        return rand() * eval_expr_print(self->children[0]);
+      case FUNC_SIN:
+        return sin(eval_expr_print(self->children[0]) * (PI/180));
+      case FUNC_SQRT:
+        return sqrt(eval_expr_print(self->children[0]));
+      case FUNC_TAN:
+        return tan(eval_expr_print(self->children[0]) * (PI/180));
+      }
+    case KIND_EXPR_VALUE: 
+      return self->u.value;
+    case KIND_EXPR_UNOP:
+      return -eval_expr_print(self->children[0]);
+    case KIND_EXPR_BINOP:
+    {
+      float first = eval_expr_print(self->children[0]);
+      float second = eval_expr_print(self->children[1]); 
+      switch(self->u.op){
+        case '*':
+          return first * second;
+        case '/':
+          return first / second;
+        case '+':
+          return first + second;
+        case '-':
+          return first - second;
+        case '^':
+          return pow(first, second);
+      }
+    }
+    case KIND_EXPR_BLOCK: break;
+    case KIND_EXPR_NAME: 
+      break;
+    default:
+      break;
+  }
+  return 0;
+}
+
 void cmd_simple_eval_print(const struct ast_node *self){
   switch (self->u.cmd){
     case CMD_UP:
@@ -347,31 +474,31 @@ void cmd_simple_eval_print(const struct ast_node *self){
       fprintf(stderr, "CMD_DOWN, put up to false\n");
       break;
     case CMD_RIGHT:
-      fprintf(stderr, "CMD_RIGHT, turn angle to right add %f\n", eval_expr(self->children[0]));
+      fprintf(stderr, "CMD_RIGHT, turn angle to right add %f\n", eval_expr_print(self->children[0]));
       break;
     case CMD_LEFT:
-      fprintf(stderr, "CMD_LEFT, turn angle to left substract %f\n", eval_expr(self->children[0]));
+      fprintf(stderr, "CMD_LEFT, turn angle to left substract %f\n", eval_expr_print(self->children[0]));
       break;
     case CMD_HEADING:
-      fprintf(stderr, "CMD_HEADING, put the angle to the value : %f\n", eval_expr(self->children[0]));
+      fprintf(stderr, "CMD_HEADING, put the angle to the value : %f\n", eval_expr_print(self->children[0]));
       break;
     case CMD_FORWARD:
-      fprintf(stderr, "CMD_FORWARD, forward with value : %f\n", eval_expr(self->children[0]));
+      fprintf(stderr, "CMD_FORWARD, forward with value : %f\n", eval_expr_print(self->children[0]));
       break;
     case CMD_BACKWARD:
-      fprintf(stderr, "CMD_BACKWARD, backward with value : %f\n", eval_expr(self->children[0]));
+      fprintf(stderr, "CMD_BACKWARD, backward with value : %f\n", eval_expr_print(self->children[0]));
       break;
     case CMD_POSITION:
-      fprintf(stderr, "CMD_POSITION, set new position x : %f / y : %f\n", eval_expr(self->children[0]), eval_expr(self->children[1]));
+      fprintf(stderr, "CMD_POSITION, set new position x : %f / y : %f\n", eval_expr_print(self->children[0]), eval_expr_print(self->children[1]));
       break;
     case CMD_HOME:
       fprintf(stderr, "CMD_HOME, reinitialise context\n");
       break;
     case CMD_COLOR:
-      fprintf(stderr, "CMD_COLOR, new color : %f, %f, %f\n", eval_expr(self->children[0]), eval_expr(self->children[1]), eval_expr(self->children[2]));
+      fprintf(stderr, "CMD_COLOR, new color : %f, %f, %f\n", eval_expr_print(self->children[0]), eval_expr_print(self->children[1]), eval_expr_print(self->children[2]));
       break;
     case CMD_PRINT:
-      fprintf(stderr, "CMD_PRINT, print : %f\n", eval_expr(self->children[0]));
+      fprintf(stderr, "CMD_PRINT, print : %f\n", eval_expr_print(self->children[0]));
       break;
   }
 }

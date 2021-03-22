@@ -11,11 +11,13 @@
 
 COMMENT     "#"+.*
 DOUBLE      ([1-9]+[0-9]*|(0|[1-9]+[0-9]*)?("."[0-9]+|[1-9]+[0-9]*)(("e"|"E")?[0-9]+)?)|0
+VARNAME     [A-Z]([A-Z]|[0-9])*
 
 %%
 
 {COMMENT}               /* Comments */
 {DOUBLE}                { yylval.value = strtod(yytext, NULL); return VALUE; }
+{VARNAME}               { yylval.name = strtok(yytext, " "); return NAME; }
 "print"                 { return KW_PRINT; }
 "forward"               { return KW_FORWARD; }
 "fw"                    { return KW_FW; }
@@ -56,6 +58,7 @@ DOUBLE      ([1-9]+[0-9]*|(0|[1-9]+[0-9]*)?("."[0-9]+|[1-9]+[0-9]*)(("e"|"E")?[0
 "tan"                   { return KW_TAN; }
 "sqrt"                  { return KW_SQRT; }
 "random"                { return KW_RANDOM; }
+"set"                   { return KW_SET; }
 [\n\t ]*                /* whitespace */
 .                       { fprintf(stderr, "Unknown token: '%s'\n", yytext); exit(EXIT_FAILURE); }
 
