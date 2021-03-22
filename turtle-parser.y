@@ -46,6 +46,9 @@ void yyerror(struct ast *ret, const char *);
 %token            KW_SET      "set"
 %token            KW_REPEAT   "repeat"
 
+%token            KW_PROC     "proc"
+%token            KW_CALL     "call"
+
 %token            KW_RED      "red"
 %token            KW_GREEN    "green"
 %token            KW_BLUE     "blue"
@@ -87,8 +90,8 @@ cmd:
   | KW_BW expr          {  $$ = make_cmd_backward($2);  }
   | KW_POSITION expr','expr    {  $$ = make_cmd_position($2, $4);  }
   | KW_POS expr','expr         {  $$ = make_cmd_position($2, $4);  }
-  | KW_UP expr          {  $$ = make_cmd_up($2);  }
-  | KW_DOWN expr        {  $$ = make_cmd_down($2);  }
+  | KW_UP               {  $$ = make_cmd_up();  }
+  | KW_DOWN             {  $$ = make_cmd_down();  }
   | KW_RIGHT expr       {  $$ = make_cmd_right($2);  }
   | KW_RT expr          {  $$ = make_cmd_right($2);  }
   | KW_LEFT expr        {  $$ = make_cmd_left($2);  }
@@ -110,7 +113,8 @@ cmd:
   | KW_SET expr expr    {  $$ = make_cmd_set($2, $3);  }
   | KW_REPEAT expr cmd  {  $$ = make_cmd_repeat($2, $3);  }
   | '{' cmd cmds '}'    {  $$ = make_cmd_block($2, $3);  }
-  /* TODO ADD REPEAT WITH BLOCK */
+  | KW_PROC expr cmd    {  $$ = make_proc($2, $3);  }
+  | KW_CALL expr        {  $$ = make_proc_call($2);  }
 ;
 
 expr:

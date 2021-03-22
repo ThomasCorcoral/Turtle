@@ -13,6 +13,7 @@ struct ast_node *make_expr_value(double value) {
   struct ast_node *node = calloc(1, sizeof(struct ast_node));
   node->kind = KIND_EXPR_VALUE;
   node->u.value = value;
+  fprintf(stderr, "TEST VALEUR : %f\n", node->u.value);
   return node;
 }
 
@@ -39,11 +40,9 @@ struct ast_node *make_binop(struct ast_node *left, struct ast_node *right, char 
 struct ast_node *make_unop(struct ast_node *right, char c) {
   struct ast_node *node = calloc(1, sizeof(struct ast_node));
   node->kind = KIND_EXPR_UNOP;
-  // node->u.value = value;
   node->u.op = c; 
-  node->children_count =2;
-  node->children[0] = 0;
-  node->children[1] = right;
+  node->children_count = 1;
+  node->children[0] = right;
   return node;
 }
 
@@ -69,27 +68,25 @@ struct ast_node *make_cmd_position(struct ast_node *expr, struct ast_node *expr2
   struct ast_node *node = calloc(1, sizeof(struct ast_node));
   node->kind = KIND_CMD_SIMPLE;
   node->u.cmd = CMD_POSITION;
-  node->children_count = 1;
+  node->children_count = 2;
   node->children[0] = expr;
   node->children[1] = expr2;
   return node;
 }
 
-struct ast_node *make_cmd_up(struct ast_node *expr) {
+struct ast_node *make_cmd_up() {
   struct ast_node *node = calloc(1, sizeof(struct ast_node));
   node->kind = KIND_CMD_SIMPLE;
   node->u.cmd = CMD_UP;
-  node->children_count = 1;
-  node->children[0] = expr;
+  node->children_count = 0;
   return node;
 }
 
-struct ast_node *make_cmd_down(struct ast_node *expr) {
+struct ast_node *make_cmd_down() {
   struct ast_node *node = calloc(1, sizeof(struct ast_node));
   node->kind = KIND_CMD_SIMPLE;
   node->u.cmd = CMD_DOWN;
-  node->children_count = 1;
-  node->children[0] = expr;
+  node->children_count = 0;
   return node;
 }
 
@@ -195,18 +192,29 @@ struct ast_node *make_cmd_block(struct ast_node *fct, struct ast_node *fcts){
   return node;
 }
 
+struct ast_node *make_proc(struct ast_node *name, struct ast_node *block){
+  struct ast_node *node = calloc(1, sizeof(struct ast_node));
+  node->kind = KIND_CMD_PROC;
+  node->children_count = 2;
+  node->children[0] = name;
+  node->children[1] = block;
+  return node;
+}
+
+struct ast_node *make_proc_call(struct ast_node *name){
+  struct ast_node *node = calloc(1, sizeof(struct ast_node));
+  node->kind = KIND_CMD_CALL;
+  node->children_count = 1;
+  node->children[0] = name;
+  return node;
+}
+
 /*
  * destroy
  */
 
 void ast_destroy(struct ast *self) {
   ast_node_destroy(self->unit);
-}
-
-void map_destroy(struct map* self) {
-  self->size = 0;
-	self->capacity = 0;
-	free(self->map_values);
 }
 
 void ast_node_destroy(struct ast_node *self){
@@ -246,6 +254,7 @@ void context_create(struct context *self) {
   map_add(&(self->variables_map), "PI", 3.14159265358979323846);
   map_add(&(self->variables_map), "SQRT2", 1.41421356237309504880);
   map_add(&(self->variables_map), "SQRT3", 1.7320508075688772935);
+  map_proc_create(&(self->proc_map));
 }
 
 void context_destroy(struct context *self){
@@ -257,43 +266,12 @@ void context_destroy(struct context *self){
   self->col.b = 0;
   self->col.g = 0;
   map_destroy(&(self->variables_map));
+  map_proc_destroy(&(self->proc_map));
 }
 
 /*
  * eval
  */
-
-float get_value(struct map* self, char* name){
-  for(size_t i = 0; i < self->size; i++){
-    if(strcmp(name, self->map_values[i].name) == 0){
-      return self->map_values[i].value;
-    }
-  }
-  return 0;
-}
-
-void map_create(struct map* self){
-	self->size = 0;
-	self->capacity = 10;
-	self->map_values = calloc(self->capacity, sizeof(struct variable));
-}
-
-void map_grow(struct map* self){
-	self->capacity *= 2;	//O(1) amorti
-	struct variable* new_data = calloc(self->capacity, sizeof(struct variable));	// nouveau tableau
-	memcpy(new_data, self->map_values, self->size * sizeof(struct variable));	// Copie
-	free(self->map_values);	// Suppression de l'ancien
-	self->map_values = new_data;	// Copie du nouveau dans la structure
-}
-
-void map_add(struct map *self, char* name, float val){
-	if (self->size == self->capacity){
-		map_grow(self);
-	}
-	self->map_values[self->size].name = name;
-	self->map_values[self->size].value = val;
-	self->size += 1;
-}
 
 void cmd_simple_eval(const struct ast_node *self, struct context *ctx){
   switch (self->u.cmd){
@@ -337,6 +315,7 @@ void cmd_simple_eval(const struct ast_node *self, struct context *ctx){
       break;
     }
     case CMD_POSITION:
+      fprintf(stderr, "TEST PASSAGE\n");
       ctx->x = eval_expr(self->children[0], ctx);
       ctx->y = eval_expr(self->children[1], ctx);
       fprintf(stdout, "MoveTo %f %f\n", ctx->x, ctx->y);
@@ -364,6 +343,10 @@ void cmd_simple_eval(const struct ast_node *self, struct context *ctx){
 
 void cmd_set_var(const struct ast_node *self, struct context *ctx){
   map_add(&(ctx->variables_map), self->children[0]->u.name, self->children[1]->u.value);
+}
+
+void cmd_set_proc(const struct ast_node *self, struct context *ctx){
+  map_proc_add(&(ctx->proc_map), self->children[0]->u.name, self->children[1]);
 }
 
 float eval_expr(const struct ast_node *self, struct context *ctx){
@@ -436,8 +419,12 @@ void ast_node_eval(const struct ast_node *self, struct context *ctx) {
         ast_node_eval(self->children[1], ctx);
       }
       break;
-    case KIND_CMD_PROC: break;
-    case KIND_CMD_CALL: break;
+    case KIND_CMD_PROC: 
+      cmd_set_proc(self, ctx);
+      break;
+    case KIND_CMD_CALL: 
+      ast_node_eval(get_block(&(ctx->proc_map), self->children[0]->u.name), ctx);
+      break;
     case KIND_CMD_SET: 
       cmd_set_var(self, ctx);
       break;
@@ -571,4 +558,89 @@ void ast_node_print(const struct ast_node *self) {
 
 void ast_print(const struct ast *self) {
   ast_node_print(self->unit);
+}
+
+/**
+ * Map management for procedures
+ */
+
+struct ast_node* get_block(struct map_proc* self, char* name){
+  for(size_t i = 0; i < self->size; i++){
+    if(strcmp(name, self->map_procedures[i].name) == 0){
+      return self->map_procedures[i].block;
+    }
+  }
+  return 0;
+}
+
+void map_proc_create(struct map_proc* self){
+	self->size = 0;
+	self->capacity = 10;
+	self->map_procedures = calloc(self->capacity, sizeof(struct procedure));
+}
+
+void map_proc_grow(struct map_proc* self){
+	self->capacity *= 2;	//O(1) amorti
+	struct procedure* new_data = calloc(self->capacity, sizeof(struct procedure));	// nouveau tableau
+	memcpy(new_data, self->map_procedures, self->size * sizeof(struct procedure));	// Copie
+	free(self->map_procedures);	// Suppression de l'ancien
+	self->map_procedures = new_data;	// Copie du nouveau dans la structure
+}
+
+void map_proc_add(struct map_proc *self, char* name, struct ast_node* block){
+	if (self->size == self->capacity){
+		map_proc_grow(self);
+	}
+	self->map_procedures[self->size].name = name;
+	self->map_procedures[self->size].block = block;
+	self->size += 1;
+}
+
+void map_proc_destroy(struct map_proc* self) {
+  self->size = 0;
+	self->capacity = 0;
+	//ast_node_destroy(self->map_procedures->block);
+  free(self->map_procedures);
+}
+
+/**
+ * Map management for variables
+ */
+
+float get_value(struct map* self, char* name){
+  for(size_t i = 0; i < self->size; i++){
+    if(strcmp(name, self->map_values[i].name) == 0){
+      return self->map_values[i].value;
+    }
+  }
+  return 0;
+}
+
+void map_create(struct map* self){
+	self->size = 0;
+	self->capacity = 10;
+	self->map_values = calloc(self->capacity, sizeof(struct variable));
+}
+
+void map_grow(struct map* self){
+	self->capacity *= 2;	//O(1) amorti
+	struct variable* new_data = calloc(self->capacity, sizeof(struct variable));	// nouveau tableau
+	memcpy(new_data, self->map_values, self->size * sizeof(struct variable));	// Copie
+	free(self->map_values);	// Suppression de l'ancien
+	self->map_values = new_data;	// Copie du nouveau dans la structure
+}
+
+void map_add(struct map *self, char* name, float val){
+	if (self->size == self->capacity){
+		map_grow(self);
+	}
+	self->map_values[self->size].name = name;
+	self->map_values[self->size].value = val;
+	self->size += 1;
+}
+
+void map_destroy(struct map* self) {
+  self->size = 0;
+	self->capacity = 0;
+	free(self->map_values);
 }

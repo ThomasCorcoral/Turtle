@@ -30,19 +30,19 @@ enum ast_func {
 
 // kind of a node in the abstract syntax tree
 enum ast_kind {
-  KIND_CMD_SIMPLE,
-  KIND_CMD_REPEAT,
-  KIND_CMD_BLOCK,
-  KIND_CMD_PROC,
-  KIND_CMD_CALL,
-  KIND_CMD_SET,
+  KIND_CMD_SIMPLE, // OK : All simple functions
+  KIND_CMD_REPEAT, // OK : Repeat function
+  KIND_CMD_BLOCK, // 
+  KIND_CMD_PROC, // TODO
+  KIND_CMD_CALL, // TODO
+  KIND_CMD_SET, // OK : Create variables
 
-  KIND_EXPR_FUNC,
-  KIND_EXPR_VALUE,
-  KIND_EXPR_UNOP,
-  KIND_EXPR_BINOP,
-  KIND_EXPR_BLOCK,
-  KIND_EXPR_NAME,
+  KIND_EXPR_FUNC, // OK : sin cos tan etc...
+  KIND_EXPR_VALUE, // OK : Just double value
+  KIND_EXPR_UNOP, // OK : Unary operation 
+  KIND_EXPR_BINOP, // OK : Binary operation
+  KIND_EXPR_BLOCK, // OK : Block {}
+  KIND_EXPR_NAME, // OK : Name of variables and procedures
 };
 
 #define AST_CHILDREN_MAX 3
@@ -71,8 +71,8 @@ struct ast_node *make_name_value(char* value);
 struct ast_node *make_cmd_forward(struct ast_node *expr);
 struct ast_node *make_cmd_backward(struct ast_node *expr);
 struct ast_node *make_cmd_position(struct ast_node *expr, struct ast_node *expr2);
-struct ast_node *make_cmd_up(struct ast_node *expr);
-struct ast_node *make_cmd_down(struct ast_node *expr);
+struct ast_node *make_cmd_up();
+struct ast_node *make_cmd_down();
 struct ast_node *make_cmd_right(struct ast_node *expr);
 struct ast_node *make_cmd_left(struct ast_node *expr);
 struct ast_node *make_cmd_heading(struct ast_node *expr);
@@ -87,6 +87,9 @@ struct ast_node *make_binop(struct ast_node *left, struct ast_node *right, char 
 struct ast_node *make_intern_expr(struct ast_node *expr, char* func);
 struct ast_node *make_cmd_repeat(struct ast_node *expr, struct ast_node *fct);
 struct ast_node *make_cmd_block(struct ast_node *fct, struct ast_node *fcts);
+
+struct ast_node *make_proc(struct ast_node *name, struct ast_node *block);
+struct ast_node *make_proc_call(struct ast_node *name);
 
 // root of the abstract syntax tree
 struct ast {
@@ -123,6 +126,23 @@ void map_destroy(struct map* self);
 void map_create(struct map* self);
 float get_value(struct map* self, char* name);
 
+struct procedure{
+  char* name;
+  struct ast_node *block; 
+};
+
+struct map_proc{
+  struct procedure* map_procedures;
+  size_t size;
+  size_t capacity;
+};
+
+void map_proc_destroy(struct map_proc* self);
+void map_proc_add(struct map_proc *self, char* name, struct ast_node* block);
+void map_proc_grow(struct map_proc* self);
+void map_proc_create(struct map_proc* self);
+struct ast_node* get_block(struct map_proc* self, char* name);
+
 // the execution context
 struct context {
   double x;
@@ -131,8 +151,10 @@ struct context {
   bool up;
   struct color col;
   struct map variables_map;
+  struct map_proc proc_map;
 };
 
+void cmd_set_proc(const struct ast_node *self, struct context *ctx);
 
 // create an initial context
 void context_create(struct context *self);
