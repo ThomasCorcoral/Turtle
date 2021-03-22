@@ -85,8 +85,8 @@ cmd:
   | KW_FW expr          {  $$ = make_cmd_forward($2);  }
   | KW_BACKWARD expr    {  $$ = make_cmd_backward($2);  }
   | KW_BW expr          {  $$ = make_cmd_backward($2);  }
-  | KW_POSITION expr    {  $$ = make_cmd_position($2);  }
-  | KW_POS expr         {  $$ = make_cmd_position($2);  }
+  | KW_POSITION expr','expr    {  $$ = make_cmd_position($2, $4);  }
+  | KW_POS expr','expr         {  $$ = make_cmd_position($2, $4);  }
   | KW_UP expr          {  $$ = make_cmd_up($2);  }
   | KW_DOWN expr        {  $$ = make_cmd_down($2);  }
   | KW_RIGHT expr       {  $$ = make_cmd_right($2);  }
@@ -104,7 +104,7 @@ cmd:
   | KW_COLOR KW_BLACK   {  $$ = make_cmd_color(make_expr_value(0), make_expr_value(0), make_expr_value(0));  }
   | KW_COLOR KW_GRAY    {  $$ = make_cmd_color(make_expr_value(0.5), make_expr_value(0.5), make_expr_value(0.5));  }
   | KW_COLOR KW_WHITE   {  $$ = make_cmd_color(make_expr_value(1), make_expr_value(1), make_expr_value(1));  }
-  | KW_COLOR expr expr expr       {  $$ = make_cmd_color($2, $3, $4);  }
+  | KW_COLOR expr','expr','expr       {  $$ = make_cmd_color($2, $4, $6);  }
   | KW_HOME expr        {  $$ = make_cmd_home($2);  }
   | KW_PRINT expr       {  $$ = make_cmd_print($2);  }
   | KW_SET expr expr    {  $$ = make_cmd_set($2, $3);  }

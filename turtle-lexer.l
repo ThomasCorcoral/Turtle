@@ -45,6 +45,7 @@ VARNAME     [A-Z]([A-Z]|[0-9])*
 "-"                     { return '-'; }
 "{"                     { return '{'; }
 "}"                     { return '}'; }
+","                     { return ','; }
 "red"                   { return KW_RED; }
 "green"                 { return KW_GREEN; }
 "blue"                  { return KW_BLUE; }
