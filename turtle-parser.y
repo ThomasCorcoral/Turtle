@@ -44,6 +44,7 @@ void yyerror(struct ast *ret, const char *);
 %token            KW_COLOR    "color"
 %token            KW_HOME     "home"
 %token            KW_SET      "set"
+%token            KW_REPEAT   "repeat"
 
 %token            KW_RED      "red"
 %token            KW_GREEN    "green"
@@ -80,33 +81,35 @@ cmds:
 ;
 
 cmd:
-    KW_FORWARD expr     {  $$ = make_cmd_forward($2); }
-  | KW_FW expr          {  $$ = make_cmd_forward($2); }
-  | KW_BACKWARD expr    {  $$ = make_cmd_backward($2); }
-  | KW_BW expr          {  $$ = make_cmd_backward($2); }
-  | KW_POSITION expr    {  $$ = make_cmd_position($2); }
-  | KW_POS expr         {  $$ = make_cmd_position($2); }
-  | KW_UP expr          {  $$ = make_cmd_up($2); }
-  | KW_DOWN expr        {  $$ = make_cmd_down($2); }
-  | KW_RIGHT expr       {  $$ = make_cmd_right($2); }
-  | KW_RT expr          {  $$ = make_cmd_right($2); }
-  | KW_LEFT expr        {  $$ = make_cmd_left($2); }
-  | KW_LT expr          {  $$ = make_cmd_left($2); }
-  | KW_HEADING expr     {  $$ = make_cmd_heading($2); }
-  | KW_HD expr          {  $$ = make_cmd_heading($2); }
-  | KW_COLOR KW_RED     {  $$ = make_cmd_color(make_expr_value(1), make_expr_value(0), make_expr_value(0)); }
-  | KW_COLOR KW_GREEN   {  $$ = make_cmd_color(make_expr_value(0), make_expr_value(1), make_expr_value(0)); }
-  | KW_COLOR KW_BLUE    {  $$ = make_cmd_color(make_expr_value(0), make_expr_value(0), make_expr_value(1)); }
-  | KW_COLOR KW_CYAN    {  $$ = make_cmd_color(make_expr_value(0), make_expr_value(1), make_expr_value(1)); }
-  | KW_COLOR KW_MAGENTA {  $$ = make_cmd_color(make_expr_value(1), make_expr_value(0), make_expr_value(1)); }
-  | KW_COLOR KW_YELLOW  {  $$ = make_cmd_color(make_expr_value(1), make_expr_value(1), make_expr_value(0)); }
-  | KW_COLOR KW_BLACK   {  $$ = make_cmd_color(make_expr_value(0), make_expr_value(0), make_expr_value(0)); }
-  | KW_COLOR KW_GRAY    {  $$ = make_cmd_color(make_expr_value(0.5), make_expr_value(0.5), make_expr_value(0.5)); }
-  | KW_COLOR KW_WHITE   {  $$ = make_cmd_color(make_expr_value(1), make_expr_value(1), make_expr_value(1)); }
-  | KW_COLOR expr expr expr       {  $$ = make_cmd_color($2, $3, $4); }
-  | KW_HOME expr        {  $$ = make_cmd_home($2); }
-  | KW_PRINT expr       {  $$ = make_cmd_print($2); }
+    KW_FORWARD expr     {  $$ = make_cmd_forward($2);  }
+  | KW_FW expr          {  $$ = make_cmd_forward($2);  }
+  | KW_BACKWARD expr    {  $$ = make_cmd_backward($2);  }
+  | KW_BW expr          {  $$ = make_cmd_backward($2);  }
+  | KW_POSITION expr    {  $$ = make_cmd_position($2);  }
+  | KW_POS expr         {  $$ = make_cmd_position($2);  }
+  | KW_UP expr          {  $$ = make_cmd_up($2);  }
+  | KW_DOWN expr        {  $$ = make_cmd_down($2);  }
+  | KW_RIGHT expr       {  $$ = make_cmd_right($2);  }
+  | KW_RT expr          {  $$ = make_cmd_right($2);  }
+  | KW_LEFT expr        {  $$ = make_cmd_left($2);  }
+  | KW_LT expr          {  $$ = make_cmd_left($2);  }
+  | KW_HEADING expr     {  $$ = make_cmd_heading($2);  }
+  | KW_HD expr          {  $$ = make_cmd_heading($2);  }
+  | KW_COLOR KW_RED     {  $$ = make_cmd_color(make_expr_value(1), make_expr_value(0), make_expr_value(0));  }
+  | KW_COLOR KW_GREEN   {  $$ = make_cmd_color(make_expr_value(0), make_expr_value(1), make_expr_value(0));  }
+  | KW_COLOR KW_BLUE    {  $$ = make_cmd_color(make_expr_value(0), make_expr_value(0), make_expr_value(1));  }
+  | KW_COLOR KW_CYAN    {  $$ = make_cmd_color(make_expr_value(0), make_expr_value(1), make_expr_value(1));  }
+  | KW_COLOR KW_MAGENTA {  $$ = make_cmd_color(make_expr_value(1), make_expr_value(0), make_expr_value(1));  }
+  | KW_COLOR KW_YELLOW  {  $$ = make_cmd_color(make_expr_value(1), make_expr_value(1), make_expr_value(0));  }
+  | KW_COLOR KW_BLACK   {  $$ = make_cmd_color(make_expr_value(0), make_expr_value(0), make_expr_value(0));  }
+  | KW_COLOR KW_GRAY    {  $$ = make_cmd_color(make_expr_value(0.5), make_expr_value(0.5), make_expr_value(0.5));  }
+  | KW_COLOR KW_WHITE   {  $$ = make_cmd_color(make_expr_value(1), make_expr_value(1), make_expr_value(1));  }
+  | KW_COLOR expr expr expr       {  $$ = make_cmd_color($2, $3, $4);  }
+  | KW_HOME expr        {  $$ = make_cmd_home($2);  }
+  | KW_PRINT expr       {  $$ = make_cmd_print($2);  }
   | KW_SET expr expr    {  $$ = make_cmd_set($2, $3);  }
+  | KW_REPEAT expr cmd  {  $$ = make_cmd_repeat($2, $3);  }
+  /* TODO ADD REPEAT WITH BLOCK */
 ;
 
 expr:

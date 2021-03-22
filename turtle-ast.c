@@ -176,6 +176,15 @@ struct ast_node *make_intern_expr(struct ast_node *expr, char* func){
   return node;
 }
 
+struct ast_node *make_cmd_repeat(struct ast_node *expr, struct ast_node *fct){
+  struct ast_node *node = calloc(1, sizeof(struct ast_node));
+  node->kind = KIND_CMD_REPEAT;
+  node->children_count = 2;
+  node->children[0] = expr;
+  node->children[1] = fct;
+  return node;
+}
+
 /*
  * destroy
  */
@@ -393,10 +402,14 @@ float eval_expr(const struct ast_node *self, struct context *ctx){
 
 void ast_node_eval(const struct ast_node *self, struct context *ctx) {
   switch(self->kind){
-    case KIND_CMD_SIMPLE: 
+    case KIND_CMD_SIMPLE:
       cmd_simple_eval(self, ctx);
       break;
-    case KIND_CMD_REPEAT: break;
+    case KIND_CMD_REPEAT: 
+      for(size_t i = 0; i < floor(self->children[0]->u.value); i++){
+        cmd_simple_eval(self->children[1], ctx);
+      }
+      break;
     case KIND_CMD_BLOCK: break;
     case KIND_CMD_PROC: break;
     case KIND_CMD_CALL: break;

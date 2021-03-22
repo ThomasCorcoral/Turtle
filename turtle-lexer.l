@@ -35,6 +35,7 @@ VARNAME     [A-Z]([A-Z]|[0-9])*
 "hd"                    { return KW_HD; }
 "color"                 { return KW_COLOR; }
 "home"                  { return KW_HOME; }
+"repeat"                { return KW_REPEAT; }
 "("                     { return '('; }
 ")"                     { return ')'; }
 "^"                     { return '^'; }
