@@ -86,6 +86,7 @@ struct ast_node *make_unop(struct ast_node *right, char c);
 struct ast_node *make_binop(struct ast_node *left, struct ast_node *right, char c);
 struct ast_node *make_intern_expr(struct ast_node *expr, char* func);
 struct ast_node *make_cmd_repeat(struct ast_node *expr, struct ast_node *fct);
+struct ast_node *make_cmd_block(struct ast_node *fct, struct ast_node *fcts);
 
 // root of the abstract syntax tree
 struct ast {

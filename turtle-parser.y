@@ -109,6 +109,7 @@ cmd:
   | KW_PRINT expr       {  $$ = make_cmd_print($2);  }
   | KW_SET expr expr    {  $$ = make_cmd_set($2, $3);  }
   | KW_REPEAT expr cmd  {  $$ = make_cmd_repeat($2, $3);  }
+  | '{' cmd cmds '}'    {  $$ = make_cmd_block($2, $3);  }
   /* TODO ADD REPEAT WITH BLOCK */
 ;
 

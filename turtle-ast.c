@@ -185,6 +185,15 @@ struct ast_node *make_cmd_repeat(struct ast_node *expr, struct ast_node *fct){
   return node;
 }
 
+struct ast_node *make_cmd_block(struct ast_node *fct, struct ast_node *fcts){
+  struct ast_node *node = calloc(1, sizeof(struct ast_node));
+  node->kind = KIND_EXPR_BLOCK;
+  node->children_count = 2;
+  node->children[0] = fct;
+  node->children[1] = fcts;
+  return node;
+}
+
 /*
  * destroy
  */
@@ -209,7 +218,9 @@ void ast_node_destroy(struct ast_node *self){
   self->u.op = '\0';
   self->u.value = 0;
   for(size_t i = 0; i<self->children_count; i++){
-    ast_node_destroy(self->children[i]);
+    if(self->children[i] != NULL){
+      ast_node_destroy(self->children[i]);
+    }
   }
   self->children_count = 0;
   if(self->next != NULL){
@@ -407,10 +418,23 @@ void ast_node_eval(const struct ast_node *self, struct context *ctx) {
       break;
     case KIND_CMD_REPEAT: 
       for(size_t i = 0; i < floor(self->children[0]->u.value); i++){
-        cmd_simple_eval(self->children[1], ctx);
+        if(self->children[1]->kind == KIND_CMD_SIMPLE){
+          cmd_simple_eval(self->children[1], ctx);
+        }else{
+          ast_node_eval(self->children[1], ctx);
+        }
       }
       break;
-    case KIND_CMD_BLOCK: break;
+    case KIND_EXPR_BLOCK: 
+      if(self->children[0]->kind == KIND_CMD_SIMPLE){
+        cmd_simple_eval(self->children[0], ctx);
+      }else{
+        ast_node_eval(self->children[0], ctx);
+      }
+      if(self->children[1] != NULL){
+        ast_node_eval(self->children[1], ctx);
+      }
+      break;
     case KIND_CMD_PROC: break;
     case KIND_CMD_CALL: break;
     case KIND_CMD_SET: 
