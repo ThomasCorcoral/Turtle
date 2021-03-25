@@ -12,7 +12,6 @@ bool already_free;
 
 static void exit_handler(){
   if(!already_free){
-    fprintf(stderr,"Inside exit_handler2()\n");
     context_destroy(&ctx);
     ast_destroy(&root);
   }
@@ -21,7 +20,7 @@ static void exit_handler(){
 int main() {
   srand(time(NULL));
   atexit(exit_handler);
-  already_free = false;
+  already_free = true;
   int ret = yyparse(&root);
 
   if (ret != 0) {
@@ -29,7 +28,7 @@ int main() {
   }
 
   yylex_destroy();
-
+  already_free = false;
   assert(root.unit);
 
   context_create(&ctx);
