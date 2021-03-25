@@ -20,19 +20,19 @@ VARNAME     [A-Z]([A-Z]|[0-9])*
 {VARNAME}               { yylval.name = strtok(yytext, " "); return NAME; }
 "print"                 { return KW_PRINT; }
 "forward"               { return KW_FORWARD; }
-"fw"                    { return KW_FW; }
+"fw"                    { return KW_FORWARD; }
 "backward"              { return KW_BACKWARD; }
-"bw"                    { return KW_BW; }
+"bw"                    { return KW_BACKWARD; }
 "position"              { return KW_POSITION; }
-"pos"                   { return KW_POS; }
+"pos"                   { return KW_POSITION; }
 "up"                    { return KW_UP; } 
 "down"                  { return KW_DOWN; }
 "right"                 { return KW_RIGHT; }
-"rt"                    { return KW_RT; }
+"rt"                    { return KW_RIGHT; }
 "left"                  { return KW_LEFT; }
-"lt"                    { return KW_LT; }
+"lt"                    { return KW_LEFT; }
 "heading"               { return KW_HEADING; }
-"hd"                    { return KW_HD; }
+"hd"                    { return KW_HEADING; }
 "color"                 { return KW_COLOR; }
 "home"                  { return KW_HOME; }
 "repeat"                { return KW_REPEAT; }

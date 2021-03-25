@@ -28,19 +28,13 @@ void yyerror(struct ast *ret, const char *);
 
 %token            KW_PRINT    "print"
 %token            KW_FORWARD  "forward"
-%token            KW_FW       "fw"
 %token            KW_BACKWARD "backward"
-%token            KW_BW       "bw"
 %token            KW_POSITION "position"
-%token            KW_POS      "pos"
 %token            KW_UP       "up" 
 %token            KW_DOWN     "down"
 %token            KW_RIGHT    "right"
-%token            KW_RT       "rt"
 %token            KW_LEFT     "left"
-%token            KW_LT       "lt"
 %token            KW_HEADING  "heading"
-%token            KW_HD       "hd"
 %token            KW_COLOR    "color"
 %token            KW_HOME     "home"
 %token            KW_SET      "set"
@@ -67,10 +61,10 @@ void yyerror(struct ast *ret, const char *);
 
 %type <node> unit cmds cmd expr
 
-%left '+' '-'
-%left '*' '/'
 %precedence NEG
 %right '^'
+%left '*' '/'
+%left '+' '-'
 
 %%
 
@@ -85,19 +79,13 @@ cmds:
 
 cmd:
     KW_FORWARD expr     {  $$ = make_cmd_forward($2);  }
-  | KW_FW expr          {  $$ = make_cmd_forward($2);  }
   | KW_BACKWARD expr    {  $$ = make_cmd_backward($2);  }
-  | KW_BW expr          {  $$ = make_cmd_backward($2);  }
   | KW_POSITION expr','expr    {  $$ = make_cmd_position($2, $4);  }
-  | KW_POS expr','expr         {  $$ = make_cmd_position($2, $4);  }
   | KW_UP               {  $$ = make_cmd_up();  }
   | KW_DOWN             {  $$ = make_cmd_down();  }
   | KW_RIGHT expr       {  $$ = make_cmd_right($2);  }
-  | KW_RT expr          {  $$ = make_cmd_right($2);  }
   | KW_LEFT expr        {  $$ = make_cmd_left($2);  }
-  | KW_LT expr          {  $$ = make_cmd_left($2);  }
   | KW_HEADING expr     {  $$ = make_cmd_heading($2);  }
-  | KW_HD expr          {  $$ = make_cmd_heading($2);  }
   | KW_COLOR KW_RED     {  $$ = make_cmd_color(make_expr_value(1), make_expr_value(0), make_expr_value(0));  }
   | KW_COLOR KW_GREEN   {  $$ = make_cmd_color(make_expr_value(0), make_expr_value(1), make_expr_value(0));  }
   | KW_COLOR KW_BLUE    {  $$ = make_cmd_color(make_expr_value(0), make_expr_value(0), make_expr_value(1));  }
@@ -110,7 +98,7 @@ cmd:
   | KW_COLOR expr','expr','expr       {  $$ = make_cmd_color($2, $4, $6);  }
   | KW_HOME expr        {  $$ = make_cmd_home($2);  }
   | KW_PRINT expr       {  $$ = make_cmd_print($2);  }
-  | KW_SET expr expr    {  $$ = make_cmd_set($2, $3);  }
+  | KW_SET expr','expr    {  $$ = make_cmd_set($2, $4);  }
   | KW_REPEAT expr cmd  {  $$ = make_cmd_repeat($2, $3);  }
   | '{' cmd cmds '}'    {  $$ = make_cmd_block($2, $3);  }
   | KW_PROC expr cmd    {  $$ = make_proc($2, $3);  }
@@ -127,10 +115,10 @@ expr:
     | expr '^' expr     { $$ = make_binop($1, $3, '^'); }
     | expr '+' expr     { $$ = make_binop($1, $3, '+'); }
     | expr '-' expr     { $$ = make_binop($1, $3, '-'); }
-    | KW_SIN expr       { $$ = make_intern_expr($2, "sin"); }
-    | KW_COS expr       { $$ = make_intern_expr($2, "cos"); }
-    | KW_TAN expr       { $$ = make_intern_expr($2, "tan"); } 
-    | KW_SQRT expr      { $$ = make_intern_expr($2, "sqrt"); }
+    | KW_SIN '(' expr ')'      { $$ = make_intern_expr($3, "sin"); }
+    | KW_COS '(' expr ')'      { $$ = make_intern_expr($3, "cos"); }
+    | KW_TAN '(' expr ')'      { $$ = make_intern_expr($3, "tan"); } 
+    | KW_SQRT '(' expr ')'      { $$ = make_intern_expr($3, "sqrt"); }
     | KW_RANDOM '('expr','expr')'   { $$ = make_intern_expr_rd($3, $5); }
 ;
 

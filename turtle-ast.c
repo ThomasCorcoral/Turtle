@@ -299,7 +299,7 @@ void cmd_simple_eval(const struct ast_node *self, struct context *ctx){
       break;
     case CMD_FORWARD:
     {
-      float eval = eval_expr(self->children[0], ctx);
+      double eval = eval_expr(self->children[0], ctx);
       ctx->x = ctx->x + cos(((int)(ctx->angle - 90) % 360) * (PI/180)) * eval;
       ctx->y = ctx->y + sin(((int)(ctx->angle - 90) % 360) * (PI/180)) * eval;
       if(!ctx->up){
@@ -311,7 +311,7 @@ void cmd_simple_eval(const struct ast_node *self, struct context *ctx){
     }
     case CMD_BACKWARD:
     {
-      float eval = eval_expr(self->children[0], ctx);
+      double eval = eval_expr(self->children[0], ctx);
       ctx->x = ctx->x - cos(((int)(ctx->angle - 90) % 360) * (PI/180)) * eval;
       ctx->y = ctx->y - sin(((int)(ctx->angle - 90) % 360) * (PI/180)) * eval;
       if(!ctx->up){
@@ -355,7 +355,7 @@ void cmd_set_proc(const struct ast_node *self, struct context *ctx){
   map_proc_add(&(ctx->proc_map), self->children[0]->u.name, self->children[1]);
 }
 
-float eval_expr(const struct ast_node *self, struct context *ctx){
+double eval_expr(const struct ast_node *self, struct context *ctx){
   switch(self->kind){
     case KIND_EXPR_FUNC: 
       switch (self->u.func)
@@ -363,15 +363,20 @@ float eval_expr(const struct ast_node *self, struct context *ctx){
       case FUNC_COS:
         return cos(eval_expr(self->children[0], ctx) * (PI/180));
       case FUNC_RANDOM:{
-        float low = eval_expr(self->children[0], ctx);
-        float hight = eval_expr(self->children[1], ctx);
-        return (float)rand()/(float)(RAND_MAX) * (hight-low) + low;}
+        double low = eval_expr(self->children[0], ctx);
+        double hight = eval_expr(self->children[1], ctx);
+        if(hight <= low){
+          fprintf(stderr, "MATH Error : Your interval for random is wrong\n");
+          exit(-1);
+        }
+        return (double)rand()/(double)(RAND_MAX) * (hight-low) + low;}
       case FUNC_SIN:
         return sin(eval_expr(self->children[0], ctx) * (PI/180));
       case FUNC_SQRT:{
-        float num = eval_expr(self->children[0], ctx);
+        double num = eval_expr(self->children[0], ctx);
         if(num < 0){
-          // TODO break the program
+          fprintf(stderr, "MATH Error : You can't use a square root on a negative number\n");
+          exit(-1);
         }
         return sqrt(num);}
       case FUNC_TAN:
@@ -383,8 +388,8 @@ float eval_expr(const struct ast_node *self, struct context *ctx){
       return -eval_expr(self->children[0], ctx);
     case KIND_EXPR_BINOP:
     {
-      float first = eval_expr(self->children[0], ctx);
-      float second = eval_expr(self->children[1], ctx); 
+      double first = eval_expr(self->children[0], ctx);
+      double second = eval_expr(self->children[1], ctx); 
       switch(self->u.op){
         case '*':
           return first * second;
@@ -395,7 +400,16 @@ float eval_expr(const struct ast_node *self, struct context *ctx){
         case '-':
           return first - second;
         case '^':
-          return pow(first, second);
+          if(second > 99){
+            fprintf(stderr, "MATH Error : Your power is too hight\n");
+            exit(-1);
+          }
+          double res = pow(first, second);
+          if(isinf(res)){
+            fprintf(stderr, "MATH Error : Your power is too hight, number is infinity\n");
+            exit(-1);
+          }
+          return res;
       }
     }
     case KIND_EXPR_BLOCK: break;
@@ -456,7 +470,7 @@ void ast_eval(const struct ast *self, struct context *ctx) {
  * print
  */
 
-float eval_expr_print(const struct ast_node *self){
+double eval_expr_print(const struct ast_node *self){
   switch(self->kind){
     case KIND_EXPR_FUNC: 
       switch (self->u.func)
@@ -478,8 +492,8 @@ float eval_expr_print(const struct ast_node *self){
       return -eval_expr_print(self->children[0]);
     case KIND_EXPR_BINOP:
     {
-      float first = eval_expr_print(self->children[0]);
-      float second = eval_expr_print(self->children[1]); 
+      double first = eval_expr_print(self->children[0]);
+      double second = eval_expr_print(self->children[1]); 
       switch(self->u.op){
         case '*':
           return first * second;
@@ -582,6 +596,8 @@ struct ast_node* get_block(struct map_proc* self, char* name){
       return self->map_procedures[i].block;
     }
   }
+  fprintf(stderr, "PROC Error : You Can't use a procedure you haven't define before\n");
+  exit(-1);
   return 0;
 }
 
@@ -600,6 +616,12 @@ void map_proc_grow(struct map_proc* self){
 }
 
 void map_proc_add(struct map_proc *self, char* name, struct ast_node* block){
+  for(size_t i = 0; i < self->size; i++){
+    if(strcmp(name, self->map_procedures[i].name) == 0){
+      fprintf(stderr, "PROC Error : This procedure already exists\n");
+      exit(-1);
+    }
+  }
 	if (self->size == self->capacity){
 		map_proc_grow(self);
 	}
@@ -619,13 +641,15 @@ void map_proc_destroy(struct map_proc* self) {
  * Map management for variables
  */
 
-float get_value(struct map* self, char* name){
+double get_value(struct map* self, char* name){
   for(size_t i = 0; i < self->size; i++){
     if(strcmp(name, self->map_values[i].name) == 0){
       return self->map_values[i].value;
     }
   }
-  return 0;
+  fprintf(stderr, "VARIABLE Error : You Can't use a variable you haven't define before\n");
+  exit(-1);
+  return -1;
 }
 
 void map_create(struct map* self){
@@ -642,7 +666,13 @@ void map_grow(struct map* self){
 	self->map_values = new_data;	// Copie du nouveau dans la structure
 }
 
-void map_add(struct map *self, char* name, float val){
+void map_add(struct map *self, char* name, double val){
+  for(size_t i = 0; i < self->size; i++){
+    if(strcmp(name, self->map_values[i].name) == 0){
+      self->map_values[i].value = val;
+      return;
+    }
+  }
 	if (self->size == self->capacity){
 		map_grow(self);
 	}

@@ -104,15 +104,14 @@ void ast_destroy(struct ast *self);
 void ast_node_destroy(struct ast_node *self);
 
 struct color {
-  float r;
-  float g;
-  float b;
+  double r;
+  double g;
+  double b;
 };
-
 
 struct variable{
   char* name;
-  float value; 
+  double value; 
 };
 
 struct map{
@@ -121,11 +120,11 @@ struct map{
   size_t capacity;
 };
 
-void map_add(struct map *self, char* name, float val);
+void map_add(struct map *self, char* name, double val);
 void map_grow(struct map* self);
 void map_destroy(struct map* self);
 void map_create(struct map* self);
-float get_value(struct map* self, char* name);
+double get_value(struct map* self, char* name);
 
 struct procedure{
   char* name;
@@ -170,7 +169,7 @@ void cmd_simple_eval_print(const struct ast_node *self);
 void ast_eval(const struct ast *self, struct context *ctx);
 void cmd_simple_eval(const struct ast_node *self, struct context *ctx);
 void cmd_set_var(const struct ast_node *self, struct context *ctx);
-float eval_expr(const struct ast_node *self, struct context *ctx);
-float eval_expr_print(const struct ast_node *self);
+double eval_expr(const struct ast_node *self, struct context *ctx);
+double eval_expr_print(const struct ast_node *self);
 
 #endif /* TURTLE_AST_H */
