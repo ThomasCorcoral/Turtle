@@ -32,9 +32,9 @@ enum ast_func {
 enum ast_kind {
   KIND_CMD_SIMPLE, // OK : All simple functions
   KIND_CMD_REPEAT, // OK : Repeat function
-  KIND_CMD_BLOCK, // 
-  KIND_CMD_PROC, // TODO
-  KIND_CMD_CALL, // TODO
+  KIND_CMD_BLOCK,
+  KIND_CMD_PROC, // OK
+  KIND_CMD_CALL, // OK
   KIND_CMD_SET, // OK : Create variables
 
   KIND_EXPR_FUNC, // OK : sin cos tan etc...

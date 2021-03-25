@@ -10,7 +10,7 @@ struct context ctx;
 struct ast root;
 bool already_free;
 
-static void exit_handler(void){
+static void exit_handler(){
   if(!already_free){
     fprintf(stderr,"Inside exit_handler2()\n");
     context_destroy(&ctx);

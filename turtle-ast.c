@@ -364,12 +364,12 @@ double eval_expr(const struct ast_node *self, struct context *ctx){
         return cos(eval_expr(self->children[0], ctx) * (PI/180));
       case FUNC_RANDOM:{
         double low = eval_expr(self->children[0], ctx);
-        double hight = eval_expr(self->children[1], ctx);
-        if(hight <= low){
+        double high = eval_expr(self->children[1], ctx);
+        if(high <= low){
           fprintf(stderr, "MATH Error : Your interval for random is wrong\n");
           exit(-1);
         }
-        return (double)rand()/(double)(RAND_MAX) * (hight-low) + low;}
+        return (double)rand()/(double)(RAND_MAX) * (high-low) + low;}
       case FUNC_SIN:
         return sin(eval_expr(self->children[0], ctx) * (PI/180));
       case FUNC_SQRT:{
@@ -399,17 +399,14 @@ double eval_expr(const struct ast_node *self, struct context *ctx){
           return first + second;
         case '-':
           return first - second;
-        case '^':
-          if(second > 99){
-            fprintf(stderr, "MATH Error : Your power is too hight\n");
-            exit(-1);
-          }
+        case '^':{
           double res = pow(first, second);
           if(isinf(res)){
-            fprintf(stderr, "MATH Error : Your power is too hight, number is infinity\n");
+            fprintf(stderr, "MATH Error : Your power is too high, number is infinity\n");
             exit(-1);
           }
           return res;
+        }
       }
     }
     case KIND_EXPR_BLOCK: break;
